@@ -13,14 +13,14 @@ class PhoneNumbersTests(unittest.TestCase):
         self.assertIsInstance(number, PhoneNumber)
 
     def test_too_long_number(self):
-        number = '1' * (PhoneNumber._MAX_LENGTH+1)
+        number = '1' * (PhoneNumber._MAX_LENGTH + 1)
         with self.assertRaises(ValueError):
-            number = PhoneNumber.parse(number)
+            PhoneNumber.parse(number)
 
     def test_too_short_number(self):
-        number = '1' * (PhoneNumber._MIN_LENGTH-1)
+        number = '1' * (PhoneNumber._MIN_LENGTH - 1)
         with self.assertRaises(ValueError):
-            number = PhoneNumber.parse(number)
+            PhoneNumber.parse(number)
 
     def test_valid_with_plus(self):
         number = PhoneNumber.parse(VALID_WITH_PLUS)
@@ -32,6 +32,25 @@ class PhoneNumbersTests(unittest.TestCase):
         number = PhoneNumber.parse(VALID_WITH_ZERO)
         self.assertIsInstance(number, PhoneNumber)
         self.assertFalse(number.leading_plus)
+
+    def test_with_whitespace(self):
+        s = ' 601   234 567 '
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+
+    def test_valid_with_dashes(self):
+        s = ' 601-234--567/'
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+
+    def test_carrier(self):
+        s = '601234567'
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+        self.assertEqual(number.get_carrier(), 'Polkomtel')
 
 
 def main():

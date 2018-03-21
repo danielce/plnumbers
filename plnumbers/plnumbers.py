@@ -38,21 +38,22 @@ class PhoneNumber(object):
         self.prefix = prefix
         self.country = country
         self.raw = raw
-        self.get_carrier()
+        self.carrier = self._get_carrier(number)
 
-    def get_carrier(self):
-        """ Returns name of carrier to which parsed number belongs """
+    def _get_carrier(self, number):
+        """
+        examines name of carrier which is maintaining the number
+        based on provided number string
+        """
         number = self.number
         if not self.prefix or not self.country:
-            self.carrier = None
-            return
+            return None
         try:
             mod = importlib.import_module(
                 'plnumbers.{}'.format(self.country)
             )
         except ImportError:
-            self.carrier = None
-            return
+            return None
 
         self._NUMBERTYPES = mod.LANE_TYPE
         match = None
@@ -63,10 +64,10 @@ class PhoneNumber(object):
 
         if match:
             self.numbertype = self._NUMBERTYPES.get(match[1])
-            self.carrier = match[0]
+            return match[0]
         else:
             self.numbertype = self._NUMBERTYPES.get('u')
-            self.carrier = None
+            return None
 
     @classmethod
     def check_length(self, number):
@@ -85,19 +86,29 @@ class PhoneNumber(object):
         raw = number
         leading_plus = cls._LEADING_PLUS
         leading_zero = cls._LEADING_ZERO
+
+        # remove white space
         number = "".join(str(number).split())
+
+        # check wheater provided number starts with plus sign
+        # or zeroes
+        if number.startswith('+'):
+            number = number[1:]
+            leading_plus = True
+        elif number.startswith('00'):
+            leading_zero = True
+            number = number[2:]
+        elif number.startswith('0'):
+            leading_zero = True
+            number = number[1:]
+
+        # second step of cleaning - extracts digits
+        number = "".join(re.findall(r'\d+', number))
 
         cls.check_length(number)
 
         if len(number) == cls._DEFAULT_LEN:
             return cls.create_default(number)
-
-        if number[0] == '+':
-            number = number[1:]
-            leading_plus = True
-        elif number[0:1] == '00':
-            leading_zero = True
-            number = number[2:]
 
         country_prefix, number = number[0:2], number[2:]
         country_code = reverse_data().get(
@@ -116,7 +127,8 @@ class PhoneNumber(object):
     @classmethod
     def create_default(cls, number):
         """
-        Creates PhoneNumber object if it
+        Used for creating PhoneNumber object when parsed number
+        was recognized as default polish national number
         """
         country_prefix = data.get(cls._DEFAULT_COUNTRY)
 
@@ -129,6 +141,13 @@ class PhoneNumber(object):
             raw=number,
         )
 
+    def get_carrier(self):
+        """
+        public method for getting carrier name once it is set
+        after __init__
+        """
+        return self.carrier
+
     def is_fixed(self):
         """ checks if parsed number is fixed/landline """
         return self.numbertype == self._NUMBERTYPES['l']
@@ -139,7 +158,8 @@ class PhoneNumber(object):
 
     def is_human(self):
         """ returns True if number is identified as fixed or
-        gsm excluding ivr, special numbers and so on"""
+        gsm excluding special and premium numbers,
+        intelligent networks and so on"""
         ntype = self.numbertype
         return ((ntype == self._NUMBERTYPES['l']) or
                 (ntype == self._NUMBERTYPES['m']))

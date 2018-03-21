@@ -1,9 +1,6 @@
 plnumbers Python Library
 ===========================
 
-plnumbers Python Library
-===========================
-
 Phone number parsing library dedicated for identifying polish national numbers.
 It can recognize both line type and carrier name.
 
@@ -21,5 +18,7 @@ PhoneNumber is object that represents valid phone number. Just provide phone num
 True
 >>> number.is_fixed()
 False
+>>> number.get_carrier()
+Polkomtel
 ```
 
