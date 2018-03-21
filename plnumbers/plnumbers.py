@@ -8,8 +8,10 @@ from .countries import data, reverse_data
 class PhoneNumber(object):
     """ Class that represents polish phone number """
     _NUMBERTYPES = None
+
     # Minimum length of valid phone number
     _MIN_LENGTH = 3
+
     # Maximum length of valid phone number
     _MAX_LENGTH = 17
 
@@ -36,16 +38,22 @@ class PhoneNumber(object):
         self.prefix = prefix
         self.country = country
         self.raw = raw
-        self.get_carrier(number)
+        self.get_carrier()
 
-    def get_carrier(self, number):
+    def get_carrier(self):
         """ Returns name of carrier to which parsed number belongs """
-        if not self.prefix:
-            return None
+        number = self.number
+        if not self.prefix or not self.country:
+            self.carrier = None
+            return
+        try:
+            mod = importlib.import_module(
+                'plnumbers.{}'.format(self.country)
+            )
+        except ImportError:
+            self.carrier = None
+            return
 
-        mod = importlib.import_module(
-            'plnumbers.{}'.format(self.country)
-        )
         self._NUMBERTYPES = mod.LANE_TYPE
         match = None
         for pattern, value in mod.LOOKUPS:
@@ -60,15 +68,16 @@ class PhoneNumber(object):
             self.numbertype = self._NUMBERTYPES.get('u')
             self.carrier = None
 
+    @classmethod
     def check_length(self, number):
-        """ 
+        """
         Validator that examines if parsed number is valid
         according to minimum and maximum length.
         """
-        if PhoneNumber._MIN_LENGTH > number:
+        if PhoneNumber._MIN_LENGTH > len(number):
             raise ValueError('PhoneNumber too short')
 
-        if PhoneNumber._MAX_LENGTH < number:
+        if PhoneNumber._MAX_LENGTH < len(number):
             raise ValueError('PhoneNumber too long')
 
     @classmethod
@@ -77,6 +86,8 @@ class PhoneNumber(object):
         leading_plus = cls._LEADING_PLUS
         leading_zero = cls._LEADING_ZERO
         number = "".join(str(number).split())
+
+        cls.check_length(number)
 
         if len(number) == cls._DEFAULT_LEN:
             return cls.create_default(number)
@@ -104,6 +115,9 @@ class PhoneNumber(object):
 
     @classmethod
     def create_default(cls, number):
+        """
+        Creates PhoneNumber object if it
+        """
         country_prefix = data.get(cls._DEFAULT_COUNTRY)
 
         return cls(
@@ -121,7 +135,7 @@ class PhoneNumber(object):
 
     def is_mobile(self):
         """ chekcs if parsed number is valid gsm number"""
-        return self.numbertype == self._NUMBERTYPES['l']
+        return self.numbertype == self._NUMBERTYPES['m']
 
     def is_human(self):
         """ returns True if number is identified as fixed or
@@ -131,13 +145,14 @@ class PhoneNumber(object):
                 (ntype == self._NUMBERTYPES['m']))
 
     def __unicode__(self):
-        return "<{}: ({}) {}>".format(
+        return "<{} ({}): {}>".format(
             self.country,
             self.carrier, self.number)
 
     def __repr__(self):
-        plus = '+' if self.leading_plus else ''
-        zero = '00' if self.leading_zero else ''
-        return '{}{}{}'.format(
-            plus, zero, self.number
-        )
+        return "<{} ({}): {}>".format(
+            self.country,
+            self.carrier, self.number)
+
+    def __str__(self):
+        return self.number
