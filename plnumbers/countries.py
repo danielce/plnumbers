@@ -252,4 +252,4 @@ data = {"BD": "880",
 
 
 def reverse_data():
-    return {y: x for x, y in data.iteritems()}
+    return {y: x for x, y in data.items()}

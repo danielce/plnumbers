@@ -45,12 +45,32 @@ class PhoneNumbersTests(unittest.TestCase):
         self.assertIsInstance(number, PhoneNumber)
         self.assertEqual(number.country, 'PL')
 
+    def test_valid_messy(self):
+        s = ' 6(01)-afv234--567/'
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+
     def test_carrier(self):
         s = '601234567'
         number = PhoneNumber.parse(s)
         self.assertIsInstance(number, PhoneNumber)
         self.assertEqual(number.country, 'PL')
-        self.assertEqual(number.get_carrier(), 'Polkomtel')
+        self.assertTrue(number.get_carrier(), 'Polkomtel')
+
+    def test_valid_gsm(self):
+        s = '601234567'
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+        self.assertTrue(number.is_mobile())
+
+    def test_valid_fixed(self):
+        s = '22 1234567'
+        number = PhoneNumber.parse(s)
+        self.assertIsInstance(number, PhoneNumber)
+        self.assertEqual(number.country, 'PL')
+        self.assertTrue(number.is_fixed())
 
 
 def main():
